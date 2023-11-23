@@ -26,13 +26,16 @@ public abstract class MongoDB extends Service<MongoDBAccount, MongoClient, Mongo
 
     public Map<String, String> containerEnvironment() {
         return Map.of(
-            "MONGODB_USERNAME", account().username(),
-            "MONGODB_PASSWORD", account().password(),
-            "MONGODB_DATABASE", account().database(),
-            "MONGODB_REPLICA_SET_NAME", account().replicaSetName(),
-            "MONGODB_REPLICA_SET_MODE", account().replicaSetMode(),
-            "MONGODB_REPLICA_SET_KEY", account().replicaSetKey(),
-            "MONGODB_ROOT_PASSWORD", account().rootPassword()
+            // "MONGODB_USERNAME", account().username(),
+            // "MONGODB_PASSWORD", account().password(),
+            // "MONGODB_DATABASE", account().database(),
+            // "MONGODB_REPLICA_SET_NAME", account().replicaSetName(),
+            // "MONGODB_REPLICA_SET_MODE", account().replicaSetMode(),
+            // "MONGODB_REPLICA_SET_KEY", account().replicaSetKey(),
+            // "MONGODB_ROOT_PASSWORD", account().rootPassword()
+            "MONGODB_DB", account().database(),
+            "MONGODB_USER", account().username(),
+            "MONGODB_PASSWORD", account().password()
         );
     }
 
