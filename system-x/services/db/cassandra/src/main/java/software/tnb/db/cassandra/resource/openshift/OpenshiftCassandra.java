@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.LocalPortForward;
@@ -33,15 +34,35 @@ import io.fabric8.kubernetes.client.dsl.PodResource;
 public class OpenshiftCassandra extends Cassandra implements OpenshiftDeployable, WithName, WithInClusterHostname, WithExternalHostname {
     private LocalPortForward portForward;
     private int localPort;
+    private String sccName;
+    private String serviceAccountName;
 
     @Override
     public void create() {
+
+        sccName = "tnb-cassandra-" + OpenshiftClient.get().getNamespace();
+
+        serviceAccountName = name() + "-sa";
+
+        OpenshiftClient.get().serviceAccounts()
+            .createOrReplace(new ServiceAccountBuilder()
+                .withNewMetadata()
+                .withName(serviceAccountName)
+                .endMetadata()
+                .build()
+            );
+
+        OpenshiftClient.get().addUsersToSecurityContext(
+            OpenshiftClient.get().createSecurityContext(sccName, "anyuid"),
+            OpenshiftClient.get().getServiceAccountRef(serviceAccountName));
+
         //@formatter:off
         OpenshiftClient.get().apps().deployments().createOrReplace(
             new DeploymentBuilder()
                 .withNewMetadata()
                     .withName(name())
                     .addToLabels(OpenshiftConfiguration.openshiftDeploymentLabel(), name())
+                    .addToAnnotations("openshift.io/scc", sccName)
                 .endMetadata()
                 .editOrNewSpec()
                     .editOrNewSelector()
@@ -62,6 +83,9 @@ public class OpenshiftCassandra extends Cassandra implements OpenshiftDeployable
                                     .withContainerPort(port())
                                     .withName(name())
                                 .endPort()
+                                .withNewSecurityContext()
+                                    .withRunAsUser(Long.valueOf(0))
+                                .endSecurityContext()
                                 .withImagePullPolicy("IfNotPresent")
                                 .withNewReadinessProbe()
                                     .withNewTcpSocket()
